@@ -174,7 +174,7 @@ const Story=(()=>{
       const c=story.cast[ch.c];
       t.hidden=false;
       t.innerHTML=`<div class="tl-row"><b>${escH(c?c.name:'')}</b>`+Object.entries(MOODS).map(([m,l])=>`<button class="${ch.mood===m?'on':''}" data-mood="${m}" title="${l.slice(2)}">${l.split(' ')[0]}</button>`).join('')+`</div>`+
-        `<div class="tl-row"><input id="stSay" maxlength="70" placeholder="💬 What does ${escH(c?c.name:'')} say?" value="${escH(ch.say)}">`+
+        `<div class="tl-row"><input id="stSay" maxlength="70" placeholder="💬 What does ${escH(c?c.name:'')} say?" value="${escH(ch.say)}">`+(SR?`<button data-tool="mic" class="mic" title="Say it out loud">🎤</button>`:'')+
         `<button data-tool="flip" title="Turn around">↔️</button><button data-tool="far" title="${ch.far?'Bring closer':'Move far away'}">${ch.far?'🔍':'🔭'}</button><button data-tool="feel" title="Write how they feel">✏️</button><button data-tool="del" title="Take off this page">🗑️</button></div>`;
     }else{
       const p=pg().props[sel.i];if(!p){sel=null;t.hidden=true;return;}
@@ -221,12 +221,32 @@ const Story=(()=>{
   function drawAll(){drawStage();drawPart();drawPages();drawTool();drawTabs();drawBody();}
   const changed=(pages=true)=>{save();drawStage();if(pages)drawPages();};
 
-  function setPage(i){cur=clamp(i,0,story.pages.length-1);sel=null;save();drawStage();drawPart();drawPages();drawTool();if(['people','scene'].includes(tab))drawBody();}
+  function setPage(i){stopListening();cur=clamp(i,0,story.pages.length-1);sel=null;save();drawStage();drawPart();drawPages();drawTool();if(['people','scene'].includes(tab))drawBody();}
   function addPage(){
     if(story.pages.length>=MAXPAGES){toast(`A story can have up to ${MAXPAGES} pages.`);return;}
     const prev=pg(),p=blankPage(prev.scene,[]);
     p.chars=prev.chars.map(ch=>Object.assign({},ch,{say:'',mood:'happy'}));
     story.pages.splice(cur+1,0,p);blip();setPage(cur+1);$('stText').value='';
+  }
+  /* ---------- talk to write (browser speech recognition) ---------- */
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  let rec=null;
+  const tidy=t=>{t=t.trim();if(!t)return t;t=t[0].toUpperCase()+t.slice(1);return /[.!?]$/.test(t)?t:t+'.';};
+  function stopListening(){if(rec){try{rec.abort();}catch(e){}rec=null;}document.querySelectorAll('.mic.on').forEach(b=>b.classList.remove('on'));}
+  function listen(btn,get,set,max,done){
+    if(!SR){toast('🎤 Talking works in Chrome, Edge and Safari.');return;}
+    if(rec){const r=rec;rec=null;try{r.stop();}catch(e){}return;}
+    const before=get(),lead=before&&!/\s$/.test(before)?before+' ':before;
+    let heard='',interim='';
+    const r=new SR();rec=r;
+    r.lang=navigator.language||'en-US';r.interimResults=true;r.continuous=false;r.maxAlternatives=1;
+    r.onresult=e=>{heard='';interim='';for(let i=0;i<e.results.length;i++){const x=e.results[i];if(x.isFinal)heard+=x[0].transcript+' ';else interim+=x[0].transcript;}
+      set((lead+heard+interim).slice(0,max));};
+    r.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed')toast('🎤 Please allow the microphone so I can hear you!');
+      else if(e.error==='no-speech')toast('🎤 I didn\'t hear anything. Tap the mic and try again!');
+      else if(e.error!=='aborted')toast('🎤 Oops, that didn\'t work. Try again!');};
+    r.onend=()=>{if(rec===r)rec=null;btn.classList.remove('on');const said=tidy(heard+interim);set((lead+said).slice(0,max));if(said){blip();if(done)done();}};
+    try{r.start();btn.classList.add('on');if(sound)tone(880,0,.12,.05,'triangle');}catch(e){rec=null;toast('🎤 Oops, that didn\'t work. Try again!');}
   }
   function svgPoint(e){const r=$('stSvg').getBoundingClientRect();return {x:(e.clientX-r.left)/r.width*480,y:(e.clientY-r.top)/r.height*300};}
 
@@ -235,7 +255,7 @@ const Story=(()=>{
       <div class="stage" id="stStage"><svg id="stSvg" viewBox="0 0 480 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Story page"></svg></div>
       <div class="tool st-tool" id="stTool" hidden></div>
       <div class="st-part" id="stPart"></div>
-      <div class="st-write"><textarea id="stText" maxlength="220" rows="3"></textarea><button class="pill" id="stIdea" title="Give me an idea">💡 Idea</button></div>
+      <div class="st-write"><textarea id="stText" maxlength="220" rows="3"></textarea><div class="st-wbtns"><button class="pill mic" id="stMic" title="Talk instead of typing">🎤 Talk</button><button class="pill" id="stIdea" title="Give me an idea">💡 Idea</button></div></div>
       <div class="st-pages" id="stPages"></div>
       <div class="actions"><button class="act" id="stNew"><b>🆕</b>New Story</button><button class="act" id="stDelPage"><b>🗑️</b>Remove Page</button><button class="act" id="stSave"><b>💾</b>Save</button><button class="act primary" id="stReadBtn"><b>📖</b>Read It!</button></div>
       <div class="closet" id="stClosetBox"><h3 id="stClosetTitle"></h3><div class="closet-list" id="stCloset"></div></div>
@@ -321,6 +341,7 @@ const Story=(()=>{
         const ch=pg().chars[sel.i];if(!ch)return;
         if(b.dataset.mood){ch.mood=b.dataset.mood;blip();changed();drawTool();return;}
         const k=b.dataset.tool;
+        if(k==='mic'){listen(b,()=>ch.say,v=>{ch.say=v;const i=$('stSay'),still=sel&&sel.t==='c'&&pg().chars[sel.i]===ch;if(i&&still&&i.value!==v)i.value=v;save();drawStage();},70,()=>drawPages());return;}
         if(k==='flip')ch.flip=!ch.flip;
         if(k==='far')ch.far=!ch.far;
         if(k==='feel'){const c=story.cast[ch.c],ta=$('stText'),line=`${c.name} felt ${FEEL[ch.mood]||'happy'}.`;ta.value=(ta.value?ta.value.replace(/\s*$/,' '):'')+line;pg().text=ta.value.slice(0,220);}
@@ -337,6 +358,9 @@ const Story=(()=>{
     $('stTool').addEventListener('input',e=>{if(e.target.id==='stSay'&&sel&&sel.t==='c'){pg().chars[sel.i].say=e.target.value;save();drawStage();}});
     $('stTool').addEventListener('focusout',e=>{if(e.target.id==='stSay')drawPages();});
     $('stText').addEventListener('input',e=>{pg().text=e.target.value;save();});
+    if(!SR)$('stMic').hidden=true;
+    $('stMic').addEventListener('click',()=>{const page=pg(),ta=$('stText');
+      listen($('stMic'),()=>page.text||'',v=>{page.text=v;if(pg()===page)ta.value=v;save();},220);});
     $('stIdea').addEventListener('click',()=>{
       const part=PARTS[partOf(cur,story.pages.length)],ta=$('stText');
       const used=ta.value;let idea=fill(pick(part.ideas));for(let k=0;k<4&&used.includes(idea);k++)idea=fill(pick(part.ideas));
@@ -388,6 +412,9 @@ const Story=(()=>{
       .st-write{display:flex;gap:8px;align-items:stretch}
       .st-write textarea{flex:1;border:none;border-radius:18px;padding:12px 14px;font:inherit;font-size:17px;color:var(--ink);resize:vertical;min-height:70px;box-shadow:0 4px 14px rgba(143,107,255,.12)}
       .st-write textarea:focus{outline:3px solid #e4d9ff}
+      .st-wbtns{display:flex;flex-direction:column;gap:6px}
+      .mic.on{background:linear-gradient(135deg,#ff5fa2,#ff8a5f)!important;color:#fff;animation:micpulse 1s ease-in-out infinite}
+      @keyframes micpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,95,162,.55)}50%{box-shadow:0 0 0 10px rgba(255,95,162,0)}}
       .st-pages{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 6px}
       .stpg{flex:0 0 auto;border:3px solid transparent;background:#fff;border-radius:14px;padding:3px;position:relative;box-shadow:0 3px 10px rgba(143,107,255,.12)}
       .stpg svg{display:block;width:96px;height:60px;border-radius:10px}
@@ -461,7 +488,7 @@ const Story=(()=>{
     if(!story.pages.some(p=>p.text||p.chars.length)){toast('Add some characters or words to your story first! ✏️');return;}
     readAt=0;$('stRead').classList.add('on');document.body.style.overflow='hidden';jingle();readPage();
   }
-  function closeBook(){$('stRead').classList.remove('on');document.body.style.overflow='';stopSpeak();speakOn=false;$('stSpeak').textContent='🔊 Read to me';}
+  function closeBook(){stopListening();$('stRead').classList.remove('on');document.body.style.overflow='';stopSpeak();speakOn=false;$('stSpeak').textContent='🔊 Read to me';}
 
   function show(){
     if(!story){story=newStory();cur=0;}
