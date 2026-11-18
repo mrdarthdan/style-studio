@@ -21,17 +21,14 @@
 <!-- ===== Home ===== -->
 <section class="view home" id="home">
   <p class="hello">Pick a studio and start creating!</p>
-  <div class="cards">
-    <a class="card" href="#dress-up"><div class="card-art" id="homeDress"></div><h2>👗 Dress Up</h2><p>Hair, makeup, outfits and sparkly extras.</p></a>
-    <a class="card" href="#room-designer"><div class="card-art" id="homeRoom"></div><h2>🛏️ Room Designer</h2><p>Decorate your dream bedroom, then move in!</p></a>
-    <div class="card soon"><div class="card-art">🎁</div><h2>More coming soon</h2><p>New studios are on the way.</p></div>
-  </div>
+  <div class="cards" id="cards"></div>
 </section>
 
 <!-- ===== Dress Up ===== -->
 <section class="view" id="mod-dress" hidden>
   <div class="app">
     <div class="stage-col">
+      <div class="cbanner" id="dBanner" hidden></div>
       <div class="stage" id="dStage">
         <svg id="dSvg" viewBox="0 0 300 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Your avatar"></svg>
         <div class="plate" id="dPlate"></div>
@@ -93,6 +90,9 @@
   </div>
 </section>
 
+<!-- ===== Studios built by their own scripts go here ===== -->
+<div id="studios"></div>
+
 <!-- ===== Shared overlays ===== -->
 <div class="show" id="show">
   <button class="close" id="closeShow">✖ Back to studio</button>
@@ -104,7 +104,7 @@
   <div class="mbox">
     <button class="mx" id="authClose" aria-label="Close">✖</button>
     <div id="authIn">
-      <h2 id="authTitle">Sign in to save your looks and rooms ☁️</h2>
+      <h2 id="authTitle">Sign in to save your creations ☁️</h2>
       <p class="msub">Use the same account as Crowder Kitchen and the other family apps. Everything you save will follow you to any device.</p>
       <button class="gbtn" id="gBtn">Continue with Google</button>
       <div class="or">or</div>
@@ -118,7 +118,7 @@
     </div>
     <div id="authOut" hidden>
       <h2>Hi, <span id="aWho"></span>! 👋</h2>
-      <p class="msub">Your saved looks and rooms are kept in your account, so they show up on any device you sign in on.</p>
+      <p class="msub">Everything you save is kept in your account, so it shows up on any device you sign in on.</p>
       <button class="act" id="aSignOut" style="width:100%;flex-direction:row;justify-content:center;padding:12px">Sign out</button>
     </div>
   </div>
@@ -129,17 +129,11 @@
 <script src="js/art.js"></script>
 <script src="js/room-art.js"></script>
 <script src="js/core.js"></script>
+<script src="js/kit.js"></script>
+<!-- Studios, in the order their cards appear on the home screen -->
 <script src="js/dressup.js"></script>
 <script src="js/room.js"></script>
-<script>
-/* wire the modules into the home screen */
-Views['dress-up']={el:'mod-dress',show:Dress.show};
-Views['room-designer']={el:'mod-room',show:Room.show};
-Views.home.show=()=>{
-  $('homeDress').innerHTML=`<svg viewBox="0 60 300 225" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">${render(Dress.state,{uid:'hd'})}</svg>`;
-  $('homeRoom').innerHTML=`<svg viewBox="0 0 480 360" xmlns="http://www.w3.org/2000/svg">${renderRoom(Room.room,{uid:'hr'})}</svg>`;
-};
-Dress.init();Room.init();Core.start();
-</script>
+<script src="js/pets.js"></script>
+<script>Core.start();</script>
 </body>
 </html>

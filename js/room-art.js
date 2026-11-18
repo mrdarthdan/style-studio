@@ -162,12 +162,17 @@ const AVATAR_SCALE=.44;
 const ROOM_DEF={name:'',wall:0,pattern:'dots',floor:'woodLight',window:'classic',view:'day',curtain:7,bed:'canopy',bedColor:0,rug:'round',rugColor:9,light:'fairy',
   items:[{t:'bookshelf',x:30,y:330,s:.9,f:false,c:9},{t:'poster',x:245,y:178,s:1,f:false,c:0},{t:'plant',x:250,y:336,s:1,f:false,c:2},{t:'teddy',x:330,y:344,s:1,f:false,c:0}]};
 
+/* Special room items that carry their own data (an avatar's look, a pet...). Other studios can add kinds here. */
+const ITEM_KINDS={
+  avatar:{field:'look',scale:AVATAR_SCALE,label:it=>it.look.name||'My avatar',
+    draw:(it,uid)=>`<g transform="translate(-150 -470)">${render(Object.assign({},DEF,it.look),{bg:false,uid})}</g>`}
+};
 function itemTransform(it){
-  const s=it.t==='avatar'?AVATAR_SCALE*it.s:it.s;
+  const K=ITEM_KINDS[it.t],s=(K?K.scale:1)*it.s;
   return `translate(${it.x.toFixed(1)} ${it.y.toFixed(1)}) scale(${(s*(it.f?-1:1)).toFixed(3)} ${s.toFixed(3)})`;
 }
 function drawItem(it,uid){
-  if(it.t==='avatar')return `<g transform="translate(-150 -470)">${render(Object.assign({},DEF,it.look),{bg:false,uid})}</g>`;
+  if(ITEM_KINDS[it.t])return ITEM_KINDS[it.t].draw(it,uid);
   const D=DECOR[it.t];if(!D)return '';
   const c=CLOTH[it.c]||CLOTH[D.c];
   return D.draw(c,shade(c,c==='#FFFFFF'?-.15:-.25),c==='#2E2E3A'?'#6B6B80':shade(c,.45));

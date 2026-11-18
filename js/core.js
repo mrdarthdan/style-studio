@@ -53,17 +53,20 @@ Core.onAuth=fn=>Core.listeners.push(fn);
 
 /* A closet keeps saved things: in the account when signed in, in this browser otherwise. */
 function Closet(opts){
-  const {table,field,nameCol,localKey,localMax,label}=opts;
+  const {table,field,nameCol,localKey,localMax,label,kind}=opts;
   const c={rows:[],local:store.get(localKey)||[],label};
+  const extra=kind?{kind}:{};
   c.items=()=>Core.user?c.rows.map(r=>r[field]):c.local;
   c.load=async()=>{
     if(!Core.user||!sb){c.rows=[];return;}
-    const {data,error}=await sb.from(table).select(`id,${field},created_at`).order('created_at',{ascending:false}).limit(100);
+    let q=sb.from(table).select(`id,${field},created_at`);
+    if(kind)q=q.eq('kind',kind);
+    const {data,error}=await q.order('created_at',{ascending:false}).limit(100);
     if(error){toast(`Couldn't load your ${label} right now.`);c.rows=[];}else c.rows=data;
   };
   c.add=async(obj,name)=>{
     if(Core.user){
-      const {data,error}=await sb.from(table).insert({[nameCol]:(name||'').slice(0,40)||null,[field]:obj}).select(`id,${field},created_at`).single();
+      const {data,error}=await sb.from(table).insert({...extra,[nameCol]:(name||'').slice(0,40)||null,[field]:obj}).select(`id,${field},created_at`).single();
       if(error){toast(/full/i.test(error.message)?`Your ${label} closet is full! Remove one to save more.`:'Oops, that didn\'t save. Try again?');return false;}
       c.rows.unshift(data);
     }else{c.local.unshift(obj);c.local=c.local.slice(0,localMax);store.set(localKey,c.local);}
@@ -80,7 +83,7 @@ function Closet(opts){
   };
   c.migrate=async()=>{
     if(!c.local.length)return 0;
-    const rows=c.local.map(o=>({[nameCol]:(o.name||'').slice(0,40)||null,[field]:o}));
+    const rows=c.local.map(o=>({...extra,[nameCol]:(o.name||'').slice(0,40)||null,[field]:o}));
     const {error}=await sb.from(table).insert(rows);
     if(error)return 0;
     const n=c.local.length;c.local=[];store.set(localKey,c.local);return n;
@@ -88,6 +91,22 @@ function Closet(opts){
   Core.closets.push(c);
   return c;
 }
+
+/* Progress (challenge stars and the like): one small object per account, kept locally too. */
+const Progress={data:store.get('ss_progress')||{},t:null};
+Progress.get=k=>Progress.data[k];
+Progress.set=(k,v)=>{Progress.data[k]=v;store.set('ss_progress',Progress.data);Progress.push();};
+Progress.push=()=>{
+  clearTimeout(Progress.t);
+  Progress.t=setTimeout(async()=>{if(!Core.user||!sb)return;await sb.from('stylestudio_progress').upsert({user_id:Core.user.id,data:Progress.data,updated_at:new Date().toISOString()});},700);
+};
+Progress.pull=async()=>{
+  if(!Core.user||!sb)return;
+  const {data}=await sb.from('stylestudio_progress').select('data').maybeSingle();
+  const remote=(data&&data.data)||{};
+  for(const [k,v] of Object.entries(remote)){const mine=Progress.data[k];Progress.data[k]=(typeof v==='number'&&typeof mine==='number')?Math.max(v,mine):(mine===undefined?v:mine);}
+  store.set('ss_progress',Progress.data);Progress.push();
+};
 
 function updateAcct(){
   const a=$('acct');
@@ -105,6 +124,7 @@ async function onUser(u){
     for(const c of Core.closets){const n=await c.migrate();if(n)moved.push(`${n} ${c.label}`);}
     if(moved.length)toast(`Moved ${moved.join(' and ')} from this device into your account ☁️`);
     for(const c of Core.closets)await c.load();
+    await Progress.pull();
   }else{for(const c of Core.closets)c.rows=[];updateAcct();}
   Core.listeners.forEach(fn=>fn());
 }
@@ -112,8 +132,16 @@ let signUp=false;
 const openAuth=()=>{$('aMsg').textContent='';$('authModal').classList.add('on');if(!Core.user)setTimeout(()=>$('aEmail').focus(),50);};
 const closeAuth=()=>$('authModal').classList.remove('on');
 
-/* ---------- navigation between modules ---------- */
+/* ---------- studios + navigation between them ---------- */
 const Views={home:{el:'home'}};
+const Studios=[];
+/* A studio is {hash, el, emoji, title, blurb, preview(), init(), show()}. Home cards follow registration order. */
+function registerStudio(s){Studios.push(s);Views[s.hash]={el:s.el,show:s.show};}
+function addSection(id,html){const sec=document.createElement('section');sec.className='view';sec.id=id;sec.hidden=true;sec.innerHTML=html;$('studios').appendChild(sec);return sec;}
+function injectCss(css){const st=document.createElement('style');st.textContent=css;document.head.appendChild(st);}
+Views.home.show=()=>{
+  $('cards').innerHTML=Studios.map(s=>`<a class="card" href="#${s.hash}"><div class="card-art">${s.preview?s.preview():''}</div><h2>${s.emoji} ${s.title}</h2><p>${typeof s.blurb==='function'?s.blurb():s.blurb}</p></a>`).join('');
+};
 function route(){
   const k=location.hash.slice(1),key=Views[k]?k:'home';
   for(const [n,v] of Object.entries(Views))$(v.el).hidden=n!==key;
@@ -161,6 +189,7 @@ Core.start=()=>{
   $('closeShow').addEventListener('click',()=>{$('show').classList.remove('on');blip();});
   $('homeBtn').addEventListener('click',()=>{blip();location.hash='';});
   $('logo').addEventListener('click',()=>{location.hash='';});
+  Studios.forEach(s=>{try{s.init();}catch(e){console.error('Studio failed to start:',s.title,e);}});
   window.addEventListener('hashchange',route);
   updateAcct();route();
   if(sb){

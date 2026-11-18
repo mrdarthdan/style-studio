@@ -25,11 +25,11 @@ const Room=(()=>{
   const clone=o=>JSON.parse(JSON.stringify(o));
   function normalize(r){
     const o=Object.assign(clone(ROOM_DEF),r||{});
-    o.items=(Array.isArray(o.items)?o.items:[]).filter(it=>it&&(it.t==='avatar'?it.look&&typeof it.look==='object':DECOR[it.t]))
-      .map(it=>({t:it.t,x:+it.x||200,y:+it.y||330,s:clamp(+it.s||1,.4,2.5),f:!!it.f,c:it.c|0,...(it.t==='avatar'?{look:it.look}:{})})).slice(0,40);
+    o.items=(Array.isArray(o.items)?o.items:[]).filter(it=>it&&(ITEM_KINDS[it.t]?it[ITEM_KINDS[it.t].field]&&typeof it[ITEM_KINDS[it.t].field]==='object':DECOR[it.t]))
+      .map(it=>{const K=ITEM_KINDS[it.t];return {t:it.t,x:+it.x||200,y:+it.y||330,s:clamp(+it.s||1,.4,2.5),f:!!it.f,c:it.c|0,...(K?{[K.field]:it[K.field]}:{})};}).slice(0,40);
     return o;
   }
-  let room=normalize(store.get('ss_room'));
+  let room=null; /* loaded in init(), after every studio has registered its room item kinds */
   let tab='walls',sel=-1,drag=null;
   const closet=Closet({table:'stylestudio_rooms',field:'room',nameCol:'name',localKey:'ss_rooms',localMax:8,label:'rooms'});
   const save=()=>store.set('ss_room',room);
@@ -44,8 +44,9 @@ const Room=(()=>{
   function drawTool(){
     const t=$('rTool'),it=room.items[sel];
     $('rHint').hidden=!!it;t.hidden=!it;if(!it)return;
-    $('rToolName').textContent=it.t==='avatar'?(it.look.name||'My avatar'):DECOR[it.t].l;
-    t.querySelector('[data-act="color"]').hidden=it.t==='avatar';
+    const K=ITEM_KINDS[it.t];
+    $('rToolName').textContent=K?K.label(it):DECOR[it.t].l;
+    t.querySelector('[data-act="color"]').hidden=!!K;
   }
   function drawTabs(){
     $('rTabs').innerHTML=TABS.map(t=>`<button class="tab${t.id===tab?' on':''}" data-tab="${t.id}"><b>${t.icon}</b>${t.label}</button>`).join('');
@@ -58,6 +59,11 @@ const Room=(()=>{
     o+=`</div>`;
     if(!saved.length)o+=`<p class="note">Save looks in <a href="#dress-up">👗 Dress Up</a> and they'll show up here too.</p>`;
     if(has)o+=`<button class="pill wide" data-moveout="1">🚪 Move out</button>`;
+    if(typeof Pets!=='undefined'){
+      const pets=[{p:Pets.state,k:'cur',l:Pets.state.name||'My pet'}].concat(Pets.closet.items().map((pt,i)=>({p:pt,k:i,l:pt.name||'Saved pet '+(i+1)})));
+      o+=`<h2 style="margin-top:22px">🐾 Pets</h2><p class="note">Tap a pet to bring it into the room. You can have lots of pets!</p><div class="grid">`+
+        pets.map(x=>`<button class="opt" data-pet="${x.k}"><svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">${renderPet(x.p,'rp'+x.k,{noBg:true})}</svg><span>${x.l}</span></button>`).join('')+`</div>`;
+    }
     return o;
   }
   function drawBody(){
@@ -152,10 +158,17 @@ const Room=(()=>{
   }
 
   function init(){
+    room=normalize(store.get('ss_room'));
     $('rTabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;tab=b.dataset.tab;blip();drawTabs();drawBody();$('rBody').scrollTop=0;});
     $('rBody').addEventListener('click',e=>{
       const add=e.target.closest('[data-add]');if(add){addItem(add.dataset.add);return;}
       const av=e.target.closest('[data-av]');if(av){placeAvatar(av.dataset.av==='cur'?Dress.state:Dress.closet.items()[+av.dataset.av]);return;}
+      const pt=e.target.closest('[data-pet]');
+      if(pt){
+        if(room.items.length>=40){toast('Your room is full! Remove something to add more.');return;}
+        const pet=JSON.parse(JSON.stringify(pt.dataset.pet==='cur'?Pets.state:Pets.closet.items()[+pt.dataset.pet]));
+        room.items.push({t:'pet',pet,x:clamp(120+Math.random()*80,30,450),y:346,s:1,f:Math.random()<.5,c:0});sel=room.items.length-1;fanfare();changed(false);return;
+      }
       if(e.target.closest('[data-moveout]')){room.items=room.items.filter(i=>i.t!=='avatar');sel=-1;blip();changed();return;}
       if(e.target.closest('[data-clear]')){const b=e.target.closest('[data-clear]');confirmTap(b,'🧹 Clear all decorations',()=>{room.items=room.items.filter(i=>i.t==='avatar');sel=-1;blip();changed();});return;}
       const b=e.target.closest('[data-key]');if(!b)return;
@@ -194,5 +207,7 @@ const Room=(()=>{
     Core.onAuth(()=>{drawCloset();if(tab==='avatar')drawBody();});
   }
   function show(){drawTabs();drawRoom(false);drawBody();drawCloset();}
+  registerStudio({hash:'room-designer',el:'mod-room',emoji:'🛏️',title:'Room Designer',blurb:'Decorate your dream bedroom, then move in!',init,show,
+    preview:()=>`<svg viewBox="0 0 480 360" xmlns="http://www.w3.org/2000/svg">${renderRoom(room,{uid:'hr'})}</svg>`});
   return {init,show,closet,get room(){return room;}};
 })();

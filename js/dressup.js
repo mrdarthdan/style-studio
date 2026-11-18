@@ -77,7 +77,8 @@ const Dress=(()=>{
     if(!list.length){box.innerHTML=`<div class="closet-empty">Tap 📸 Save Look to keep your favorite outfits here!${Core.user||!sb?'':' Sign in to keep them on every device.'}</div>`;return;}
     box.innerHTML=list.map((s,i)=>`<div class="look" role="button" tabindex="0" data-look="${i}" title="Wear this look"><svg viewBox="0 0 300 480">${render(Object.assign({},DEF,s),{uid:'dc'+i})}</svg><button class="del" data-del="${i}" aria-label="Remove look">✖</button></div>`).join('');
   }
-  function update(){save();drawAvatar(true);const y=$('dBody').scrollTop;drawBody();$('dBody').scrollTop=y;}
+  const changeFns=[];
+  function update(){save();drawAvatar(true);const y=$('dBody').scrollTop;drawBody();$('dBody').scrollTop=y;changeFns.forEach(f=>f(state));}
 
   function init(){
     $('dTabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;tab=b.dataset.tab;blip();drawTabs();drawBody();$('dBody').scrollTop=0;});
@@ -126,6 +127,8 @@ const Dress=(()=>{
     $('dShow').addEventListener('click',()=>showOff(`<svg viewBox="0 0 300 480" xmlns="http://www.w3.org/2000/svg">${render(state,{uid:'s'})}</svg>`,state.name?`🌟 ${state.name} 🌟`:'🌟 Superstar! 🌟'));
     Core.onAuth(drawCloset);
   }
-  function show(){drawTabs();drawAvatar(false);drawBody();drawCloset();}
-  return {init,show,closet,get state(){return state;}};
+  function show(){drawTabs();drawAvatar(false);drawBody();drawCloset();changeFns.forEach(f=>f(state));}
+  registerStudio({hash:'dress-up',el:'mod-dress',emoji:'👗',title:'Dress Up',blurb:'Hair, makeup, outfits and sparkly extras.',init,show,
+    preview:()=>`<svg viewBox="0 60 300 225" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">${render(state,{uid:'hd'})}</svg>`});
+  return {init,show,closet,get state(){return state;},onChange:fn=>changeFns.push(fn)};
 })();
