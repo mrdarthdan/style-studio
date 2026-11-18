@@ -2,7 +2,8 @@
    makeStudio(cfg) builds a whole "pick options, see it change, save it" studio from:
      prefix, hash, emoji, title, blurb, viewBox, label, defaults, storeKey, kind, closetLabel,
      render(state,uid,opts) -> svg markup, tabs [{id,icon,label,secs:[...]}], surprise(state) -> state,
-     plus optional hooks: onPick, onStageClick, afterDraw, belowStage, showTitle, plate, preview, wideStage. */
+     plus optional hooks: onPick, onAct, onStageClick, afterDraw, belowStage, showTitle, plate, previewBox, wideStage,
+     reset(state) -> state, toSave(state) -> what gets saved, load(state, saved) -> state. */
 function studioLayout(p,o){
   return `<div class="app${o.wideStage?' room-app':''}"><div class="stage-col">`+
     `<div class="stage" id="${p}Stage"><svg id="${p}Svg" viewBox="${o.viewBox}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${o.label}"></svg><div class="plate" id="${p}Plate"></div></div>`+
@@ -84,10 +85,10 @@ function makeStudio(cfg){
     $(p+'Name').addEventListener('input',e=>{state.name=e.target.value;save();$(p+'Plate').textContent=plate();if(cfg.nameRedraws)S.draw(false);});
     $(p+'Rand').addEventListener('click',()=>{state=cfg.surprise(clone(state));jingle();S.update();sparkles(p+'Stage',6);});
     const resetLabel='<b>🔄</b>Start Over';
-    $(p+'Reset').addEventListener('click',()=>confirmTap($(p+'Reset'),resetLabel,()=>{blip();const n=state.name;state=fresh();state.name=n;S.update();}));
+    $(p+'Reset').addEventListener('click',()=>confirmTap($(p+'Reset'),resetLabel,()=>{blip();const n=state.name;state=cfg.reset?cfg.reset(clone(state)):fresh();state.name=n;S.update();}));
     $(p+'Save').addEventListener('click',async()=>{
       const b=$(p+'Save');b.disabled=true;
-      const ok=await closet.add(clone(state),state.name);
+      const ok=await closet.add(clone(cfg.toSave?cfg.toSave(state):state),state.name);
       b.disabled=false;if(!ok)return;
       S.drawCloset();fanfare();sparkles(p+'Stage',8);
       b.innerHTML='<b>💖</b>Saved!';setTimeout(()=>b.innerHTML='<b>💾</b>Save',1400);
@@ -96,7 +97,8 @@ function makeStudio(cfg){
       const d=e.target.closest('[data-del]');
       if(d){e.stopPropagation();if(await closet.remove(Number(d.dataset.del))){S.drawCloset();blip();}return;}
       const l=e.target.closest('[data-look]');if(!l)return;
-      state=Object.assign(clone(cfg.defaults),clone(closet.items()[Number(l.dataset.look)]));
+      const saved=clone(closet.items()[Number(l.dataset.look)]);
+      state=cfg.load?cfg.load(clone(state),saved):Object.assign(clone(cfg.defaults),saved);
       if(cfg.normalize)state=cfg.normalize(state);
       $(p+'Name').value=state.name||'';blip();S.update();
     });
