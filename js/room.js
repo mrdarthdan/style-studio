@@ -187,7 +187,7 @@ const Room=(()=>{
     $('rTool').addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(b)toolAction(b.dataset.act);});
     $('rName').value=room.name||'';
     $('rName').addEventListener('input',e=>{room.name=e.target.value;save();$('rPlate').textContent=room.name?'🏠 '+room.name:'';});
-    $('rRand').addEventListener('click',surprise);
+    $('rRand').addEventListener('click',()=>{surprise();Track.hit('surprise');});
     const resetLabel='<b>🔄</b>Start Over';
     $('rReset').addEventListener('click',()=>confirmTap($('rReset'),resetLabel,()=>{blip();room=normalize(Object.assign(clone(ROOM_DEF),{name:room.name}));sel=-1;changed();}));
     $('rSave').addEventListener('click',async()=>{

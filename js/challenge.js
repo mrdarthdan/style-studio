@@ -11,9 +11,9 @@ const Challenge=(()=>{
       ['Sun protection','A sun hat or glasses',s=>s.hat==='sunhat'||s.glasses!=='none']]},
     {id:'royal',e:'👑',t:'Royal Ball',p:'You are invited to the royal ball at the castle!',checks:[
       ['At the castle','Places tab',s=>s.bg==='castle'],
-      ['A princess gown','Dresses tab',s=>s.dress==='gown'],
-      ['A tiara','Extras tab',s=>s.hat==='tiara'],
-      ['Fancy jewelry','A necklace or earrings',s=>s.necklace!=='none'||s.earrings!=='none']]},
+      ['Royal clothes','A princess gown or a suit',s=>s.dress==='gown'||(s.dress==='none'&&s.top==='suit')],
+      ['A tiara or crown','Extras tab',s=>['tiara','crown'].includes(s.hat)],
+      ['Something fancy','A necklace, earrings, tie or bow tie',s=>s.necklace!=='none'||s.earrings!=='none']]},
     {id:'snow',e:'❄️',t:'Snow Day',p:'It snowed! Bundle up to build a snowman.',checks:[
       ['Out in the snow','Places tab',s=>s.bg==='snow'],
       ['Something warm','A sweater, hoodie or jacket',s=>s.dress==='none'&&['sweater','hoodie','jacket'].includes(s.top)],
@@ -46,9 +46,9 @@ const Challenge=(()=>{
       ['Pearls from the sea','A pearl necklace',s=>s.necklace==='pearls']]},
     {id:'popstar',e:'🎤',t:'Pop Star',p:'The crowd is cheering. Time for your concert!',checks:[
       ['On stage','Places tab',s=>s.bg==='stage'],
-      ['Stage outfit','A jacket or party dress',s=>s.dress==='party'||(s.dress==='none'&&s.top==='jacket')],
+      ['Stage outfit','A jacket, suit, vest or party dress',s=>s.dress==='party'||(s.dress==='none'&&['jacket','suit','vest'].includes(s.top))],
       ['Cool shades','Star or heart glasses',s=>['star','heart'].includes(s.glasses)],
-      ['Glam lashes','Me tab',s=>s.lashes===2]]},
+      ['Star power','Glam lashes or headphones',s=>s.lashes===2||s.hat==='headphones']]},
     {id:'purple',e:'💜',t:'All Purple',p:'Can you make a look that is all purple?',checks:[
       ['Purple outfit','Top and bottom, or a dress',s=>outfit(s).every(c=>FAM.purple.includes(c))],
       ['Purple shoes','Shoe color',s=>s.shoes!=='none'&&FAM.purple.includes(s.shoesColor)],
@@ -58,7 +58,7 @@ const Challenge=(()=>{
       ['At the park','Places tab',s=>s.bg==='park'],
       ['Team jersey','Tops tab',s=>s.dress==='none'&&s.top==='jersey'],
       ['Sneakers','Shoes tab',s=>s.shoes==='sneakers'],
-      ['Hair up','A ponytail, pigtails or braids',s=>['ponytail','pigtails','braids'].includes(s.hair)]]},
+      ['Ready to play','Hair up or a ball cap',s=>['ponytail','pigtails','braids'].includes(s.hair)||s.hat==='cap']]},
     {id:'candy',e:'🍭',t:'Candy Land Party',p:'A sweet party in Candy Land!',checks:[
       ['In Candy Land','Places tab',s=>s.bg==='candy'],
       ['A party balloon','Extras tab, Hold something',s=>s.held==='balloon'],
@@ -78,7 +78,27 @@ const Challenge=(()=>{
       ['A rainbow','Face sparkle or necklace',s=>s.sticker==='rainbow'||s.necklace==='rainbow'],
       ['Colorful hair','Pink, purple, blue or green hair',s=>[7,8,9,10].includes(s.hairColor)],
       ['Mix it up','A top and bottom in different colors',s=>s.dress==='none'&&s.topColor!==s.bottomColor],
-      ['Bright shoes','Not black or white',s=>s.shoes!=='none'&&![10,11].includes(s.shoesColor)]]}
+      ['Bright shoes','Not black or white',s=>s.shoes!=='none'&&![10,11].includes(s.shoesColor)]]},
+    {id:'pirate',e:'🏴‍☠️',t:'Pirate Adventure',p:'Ahoy! Sail the seas looking for treasure.',checks:[
+      ['At the beach','Places tab',s=>s.bg==='beach'],
+      ['A pirate hat','Extras tab',s=>s.hat==='pirate'],
+      ['A trusty sword','Extras tab, Hold something',s=>s.held==='sword'],
+      ['A striped shirt','Tops tab',s=>s.dress==='none'&&s.top==='stripes']]},
+    {id:'wizard',e:'🧙',t:'Wizard School',p:'Your first day at a school for wizards!',checks:[
+      ['At the castle','Places tab',s=>s.bg==='castle'],
+      ['A wizard hat','Extras tab',s=>s.hat==='wizard'],
+      ['Magic in hand','A wand or a story book',s=>['wand','book'].includes(s.held)],
+      ['Wizard colors','Wear purple or blue',s=>wears(s,'purple')||wears(s,'blue')]]},
+    {id:'sharp',e:'🤵',t:'Super Sharp',p:'Dress up for a fancy dinner party.',checks:[
+      ['A suit or vest','Tops tab',s=>s.dress==='none'&&['suit','vest'].includes(s.top)],
+      ['A tie or bow tie','Extras tab',s=>['tie','bowtie'].includes(s.necklace)],
+      ['Dress shoes','Shoes tab',s=>s.shoes==='loafers'],
+      ['Neat hair','Short, Swoop or Buzz Cut',s=>['short','sideswept','buzz'].includes(s.hair)]]},
+    {id:'skate',e:'🛹',t:'Skate Park',p:'Show off your coolest tricks at the park!',checks:[
+      ['At the park','Places tab',s=>s.bg==='park'],
+      ['A cap or headphones','Extras tab',s=>['cap','headphones'].includes(s.hat)],
+      ['High tops','Shoes tab',s=>s.shoes==='hightops'],
+      ['Comfy clothes','A hoodie or the Lightning Tee',s=>s.dress==='none'&&['hoodie','bolt'].includes(s.top)]]}
   ];
   const byId=id=>C.find(c=>c.id===id);
   const starsFor=met=>met>=4?3:met===3?2:1;
@@ -109,6 +129,7 @@ const Challenge=(()=>{
     const c=byId(active);if(!c)return;
     const s=Dress.state,met=c.checks.filter(([, ,f])=>{try{return f(s);}catch(e){return false;}}).length,stars=starsFor(met);
     if(stars>earned(c.id))Progress.set('ch_'+c.id,stars);
+    Track.hit('challenge_done');
     const msg=stars===3?'Perfect style!':stars===2?'Looking great!':'Nice try! Can you get 3 stars?';
     stop();
     showOff(`<svg viewBox="0 0 300 480" xmlns="http://www.w3.org/2000/svg">${render(s,{uid:'chs'})}</svg>`,`${'⭐'.repeat(stars)} ${c.t}: ${msg}`);
@@ -148,5 +169,5 @@ const Challenge=(()=>{
       `<path d="M150 70 H250 V120 Q250 175 200 180 Q150 175 150 120 Z" fill="#FFD84D" stroke="#D9A82A" stroke-width="4"/><path d="M150 85 Q115 85 118 115 Q122 140 152 140 M250 85 Q285 85 282 115 Q278 140 248 140" stroke="#D9A82A" stroke-width="8" fill="none"/>`+
       `<rect x="188" y="178" width="24" height="34" fill="#E9B93A"/><rect x="160" y="210" width="80" height="22" rx="6" fill="#B07BC9"/>`+star(200,122,22,'#fff')+
       `<text x="200" y="272" text-anchor="middle" font-family="Fredoka,Arial" font-weight="700" font-size="30" fill="#3b2453">⭐ ${total()} / ${C.length*3}</text></svg>`});
-  return {start,list:C};
+  return {start,list:C,total,max:()=>C.length*3};
 })();

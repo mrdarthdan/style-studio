@@ -111,6 +111,7 @@ const Fashion=(()=>{
       const n=models.length,gap=Math.min(70,300/n);
       const line=models.map((l,i)=>{const x=240-(n-1)*gap/2+i*gap,s=.36;return `<g transform="translate(${(x-150*s).toFixed(1)} ${(330-470*s).toFixed(1)}) scale(${s})">${render(l,{bg:false,uid:'fin'+i})}</g>`;}).join('');
       actor.innerHTML=line;
+      Track.hit('show_done');
       showOff(`<svg viewBox="0 0 480 360" xmlns="http://www.w3.org/2000/svg">${scene('fsf',{actor:line})}</svg>`,'🎉 What a show! Everyone is a superstar! 🎉',true);
     }
     if(my===runId)endShow();

@@ -36,7 +36,7 @@ function showOff(svgHtml,title,landscape){
   sh.querySelectorAll('.confetti').forEach(c=>c.remove());
   for(let i=0;i<45;i++){const c=document.createElement('span');c.className='confetti';c.textContent=pick(['✨','⭐','💖','🎀','🌸','💜','🎉','🦋']);
     c.style.left=Math.random()*100+'vw';c.style.animationDuration=(2.5+Math.random()*3)+'s';c.style.animationDelay=(Math.random()*2.5)+'s';c.style.fontSize=(16+Math.random()*18)+'px';sh.appendChild(c);}
-  fanfare();
+  fanfare();Track.hit('showoff');
 }
 function confirmTap(btn,label,fn){
   if(btn.dataset.confirm){delete btn.dataset.confirm;btn.innerHTML=label;fn();return;}
@@ -70,6 +70,7 @@ function Closet(opts){
       if(error){toast(/full/i.test(error.message)?`Your ${label} closet is full! Remove one to save more.`:'Oops, that didn\'t save. Try again?');return false;}
       c.rows.unshift(data);
     }else{c.local.unshift(obj);c.local=c.local.slice(0,localMax);store.set(localKey,c.local);}
+    Track.hit('saved_'+(kind||label));
     return true;
   };
   c.remove=async i=>{
@@ -107,6 +108,12 @@ Progress.pull=async()=>{
   for(const [k,v] of Object.entries(remote)){const mine=Progress.data[k];Progress.data[k]=(typeof v==='number'&&typeof mine==='number')?Math.max(v,mine):(mine===undefined?v:mine);}
   store.set('ss_progress',Progress.data);Progress.push();
 };
+
+/* Track counts things kids do (saves, shows, stories...) so the Sticker Book can hand out rewards. */
+const Track={fns:[],
+  n:k=>Progress.get('n_'+k)||0,
+  hit(k,by=1){Progress.set('n_'+k,Track.n(k)+by);Track.fns.forEach(f=>{try{f(k);}catch(e){}});},
+  on(fn){Track.fns.push(fn);}};
 
 function updateAcct(){
   const a=$('acct');
@@ -147,6 +154,7 @@ function route(){
   for(const [n,v] of Object.entries(Views))$(v.el).hidden=n!==key;
   $('homeBtn').hidden=key==='home';
   if(Views[key].show)Views[key].show();
+  if(key!=='home'&&!Track.n('visit_'+key))Track.hit('visit_'+key);
   window.scrollTo(0,0);
 }
 

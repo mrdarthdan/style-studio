@@ -119,6 +119,7 @@ const Coloring=(()=>{
       if(s.tool==='eraser')delete f[id];
       else f[id]=s.tool==='magic'?PAL[rint(PAL.length-1)]:PAL[s.color];
       if(sound)tone(500+rint(500),0,.1,.05);
+      Track.hit('color_fill');
       St.update(false,false);
     },
     init:()=>injectCss(`#clSvg{cursor:pointer}#clSvg [data-r]:hover{opacity:.85}.tools{display:flex;flex-wrap:wrap;gap:8px}`)

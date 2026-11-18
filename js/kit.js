@@ -83,7 +83,7 @@ function makeStudio(cfg){
     $(p+'Svg').addEventListener('click',e=>{if(cfg.onStageClick)cfg.onStageClick(state,e,S);});
     $(p+'Name').value=state.name||'';
     $(p+'Name').addEventListener('input',e=>{state.name=e.target.value;save();$(p+'Plate').textContent=plate();if(cfg.nameRedraws)S.draw(false);});
-    $(p+'Rand').addEventListener('click',()=>{state=cfg.surprise(clone(state));jingle();S.update();sparkles(p+'Stage',6);});
+    $(p+'Rand').addEventListener('click',()=>{state=cfg.surprise(clone(state));jingle();Track.hit('surprise');S.update();sparkles(p+'Stage',6);});
     const resetLabel='<b>🔄</b>Start Over';
     $(p+'Reset').addEventListener('click',()=>confirmTap($(p+'Reset'),resetLabel,()=>{blip();const n=state.name;state=cfg.reset?cfg.reset(clone(state)):fresh();state.name=n;S.update();}));
     $(p+'Save').addEventListener('click',async()=>{

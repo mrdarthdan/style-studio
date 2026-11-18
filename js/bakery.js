@@ -141,7 +141,7 @@ const Bakery=(()=>{
         const s=S.state;
         if(s.top!=='candles'){s.top='candles';s.blown=false;blip();S.update();toast('Candles are lit — make a wish! 🕯️');return;}
         if(s.blown){s.blown=false;blip();S.update(false);toast('Candles relit! 🕯️');return;}
-        s.blown=true;S.update(false,false);fanfare();sparkles('bkStage',14);toast('🎉 Your wish is on its way! 🎉');
+        s.blown=true;S.update(false,false);fanfare();Track.hit('candles');sparkles('bkStage',14);toast('🎉 Your wish is on its way! 🎉');
       });
     }
   });
