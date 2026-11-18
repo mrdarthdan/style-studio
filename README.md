@@ -10,7 +10,7 @@ A creative studio game for kids, made of modules:
 - **🖍️ Coloring Studio** – 9 tap-to-fill pictures, a 24-color palette, a magic rainbow brush, eraser and undo.
 - **💅 Nail Salon** – nail shapes, polish, patterns and nail art for all nails or one at a time, plus rings and bracelets.
 - **🧁 Cake & Cupcake Bakery** – cupcakes or layer cakes with flavors, frosting, toppings and toppers; make a wish and blow out the candles.
-- **📖 Story Maker** – cast your avatars and pets, build a picture book page by page (13 places, 18 props, 8 facial expressions, speech bubbles), get help from story ideas, a beginning/problem/solving/ending guide and a word bank, then read it like a book with page turns and read-aloud.
+- **📖 Story Maker** – cast your avatars and pets, build a picture book page by page (13 places, 18 props, 8 facial expressions, speech bubbles), get help from story ideas, a beginning/problem/solving/ending guide and a word bank, tap 🎤 to talk instead of typing (story text and speech bubbles; Chrome, Edge and Safari), then read it like a book with page turns and read-aloud.
 - **🏅 Sticker Book** – 25 achievements earned by playing across every studio; each unlocks a sticker to place on the sticker book pages.
 
 **Play it:** https://darthdan.vpages.site/style-studio/
