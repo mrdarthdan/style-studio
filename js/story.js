@@ -84,8 +84,9 @@ const Story=(()=>{
     if(typeof Pets!=='undefined')c.push(castMember('pet',Pets.state,'sidekick'));
     return c;
   }
-  const nameOf=i=>{const c=story.cast[i];return c?c.name:(i===0?'our hero':'a new friend');};
-  const fill=t=>t.replace(/\{A\}/g,nameOf(0)).replace(/\{B\}/g,nameOf(1)).replace(/\{place\}/g,(SCENES[pg().scene]||SCENES.park).l.toLowerCase());
+  const nameIn=(cast,i)=>{const c=cast[i];return c?c.name:(i===0?'our hero':'a new friend');};
+  const names=(t,cast)=>t.replace(/\{A\}/g,nameIn(cast,0)).replace(/\{B\}/g,nameIn(cast,1));
+  const fill=t=>names(t,story.cast).replace(/\{place\}/g,(SCENES[pg().scene]||SCENES.park).l.toLowerCase());
   const slots=n=>n<=1?[240]:n===2?[165,320]:n===3?[110,240,370]:[80,190,300,410];
   const blankPage=(scene,who)=>({scene,text:'',props:[],chars:who.map((c,j)=>({c,x:slots(who.length)[j],mood:'happy',flip:false,far:false,say:''}))});
   function newStory(){
@@ -101,7 +102,7 @@ const Story=(()=>{
       who.forEach(([ci,mood,say],j)=>{page.chars[j].mood=mood||'happy';page.chars[j].say=say||'';});
       if(page.chars.length===1&&(P.p||[]).some(p=>p[1]>300))page.chars[0].x=150;
       page.props=(P.p||[]).map(([p,x,y])=>({p,x,y,z:1}));
-      page.text=P.t;s.pages.push(page);
+      page.text=names(P.t,cast);s.pages.push(page);
     });
     return s;
   }
@@ -418,7 +419,7 @@ const Story=(()=>{
       .st-words .by{color:var(--muted);font-size:.8em}
       .st-nav{display:flex;align-items:center;justify-content:center;gap:12px}
       .st-nav span{color:var(--muted);font-weight:600;min-width:90px;text-align:center}
-      .st-read .close{position:static}
+      .st-read .close{position:static;border:none;background:#fff;border-radius:999px;padding:10px 20px;font:inherit;font-weight:700;font-size:16px;color:var(--ink);box-shadow:0 6px 18px rgba(143,107,255,.22);cursor:pointer}
       @media (max-width:820px){#mod-story .stage-col{position:static}.st-write textarea{font-size:16px}}
     `);
     Core.onAuth(()=>{if(!$('mod-story').hidden){drawCloset();if(tab==='cast')drawBody();}});

@@ -80,8 +80,8 @@ const Stickers=(()=>{
   function drawStage(){
     let o=(SCENES[page]||SCENES.park).d('sbs');
     placed().forEach(([id,x,y,z,r],i)=>{const a=byId(id);if(!a)return;
-      o+=`<g transform="translate(${x} ${y}) rotate(${r||0}) scale(${(z||1)*.62})" data-st="${i}" style="cursor:grab">${badge(a,'pl'+i)}</g>`;
-      if(i===sel)o+=`<circle cx="${x}" cy="${y}" r="${33*(z||1)}" fill="none" stroke="#ff5fa2" stroke-width="3" stroke-dasharray="6 5" pointer-events="none"/>`;});
+      o+=`<g transform="translate(${x} ${y}) rotate(${r||0}) scale(${(z||1)*.8})" data-st="${i}" style="cursor:grab">${badge(a,'pl'+i)}</g>`;
+      if(i===sel)o+=`<circle cx="${x}" cy="${y}" r="${42*(z||1)}" fill="none" stroke="#ff5fa2" stroke-width="3" stroke-dasharray="6 5" pointer-events="none"/>`;});
     if(!placed().length)o+=`<rect x="90" y="120" width="300" height="56" rx="18" fill="#fff" opacity=".88"/><text x="240" y="154" text-anchor="middle" font-family="Fredoka,Arial" font-weight="600" font-size="17" fill="#8a7a9c">Tap a sticker below to stick it here!</text>`;
     $('sbSvg').innerHTML=o;
   }

@@ -2,7 +2,7 @@
 
 A creative studio game for kids, made of modules:
 
-- **👗 Dress Up** – style an avatar with hairstyles, makeup, outfits, shoes, accessories and fun backgrounds.
+- **👗 Dress Up** – make a girl or boy avatar with hairstyles, makeup, outfits, shoes, accessories and fun backgrounds.
 - **🛏️ Room Designer** – design a bedroom, decorate it, then move one of your avatars in.
 - **🐾 Pet Studio** – design a pet (puppy, kitty, bunny, unicorn, dragon, hamster), then bring it home to your room.
 - **⭐ Style Challenge** – dress up for a theme, tick off the checklist and earn up to 3 stars per challenge.
@@ -10,6 +10,8 @@ A creative studio game for kids, made of modules:
 - **🖍️ Coloring Studio** – 9 tap-to-fill pictures, a 24-color palette, a magic rainbow brush, eraser and undo.
 - **💅 Nail Salon** – nail shapes, polish, patterns and nail art for all nails or one at a time, plus rings and bracelets.
 - **🧁 Cake & Cupcake Bakery** – cupcakes or layer cakes with flavors, frosting, toppings and toppers; make a wish and blow out the candles.
+- **📖 Story Maker** – cast your avatars and pets, build a picture book page by page (13 places, 18 props, 8 facial expressions, speech bubbles), get help from story ideas, a beginning/problem/solving/ending guide and a word bank, then read it like a book with page turns and read-aloud.
+- **🏅 Sticker Book** – 25 achievements earned by playing across every studio; each unlocks a sticker to place on the sticker book pages.
 
 **Play it:** https://darthdan.vpages.site/style-studio/
 
@@ -45,13 +47,17 @@ js/dressup.js     Dress Up            js/room.js       Room Designer
 js/pets.js        Pet Studio          js/challenge.js  Style Challenge
 js/fashion.js     Fashion Show        js/coloring.js   Coloring Studio
 js/nails.js       Nail Salon          js/bakery.js     Cake & Cupcake Bakery
+js/story-art.js   story scenes + props js/story.js     Story Maker
+js/stickers.js    Sticker Book and achievements
 ```
+
+Achievements read `Track` counters from `core.js` (`Track.hit('name')` bumps a counter in Progress; saves, Show Off, Surprise and studio visits are counted automatically) plus closet sizes and challenge stars.
 
 To add a studio: write `js/<studio>.js` that calls `makeStudio({...})` (or `registerStudio({...})` for a custom layout), then add its `<script>` tag to `index.html` before `Core.start()`. Its home card appears automatically. Signed out, saved creations stay in the browser's `localStorage`. Signed in, they are stored in Supabase.
 
 ## Supabase
 
-Style Studio uses an existing Supabase project's auth, so the same accounts work across apps. It adds four tables: `stylestudio_looks` (avatars), `stylestudio_rooms` (same shape, with a `room` column and a 50-room cap), `stylestudio_items` (everything made with the studio kit: pets, coloring pages, nail designs, bakery treats; one row per item with a `kind`, a `name` and a `data` object, up to 60 per kind) and `stylestudio_progress` (one row per account holding challenge stars). All use the same owner-only row level security:
+Style Studio uses an existing Supabase project's auth, so the same accounts work across apps. It adds four tables: `stylestudio_looks` (avatars), `stylestudio_rooms` (same shape, with a `room` column and a 50-room cap), `stylestudio_items` (pets, coloring pages, nail designs, bakery treats and stories; one row per item with a `kind`, a `name` and a `data` object, up to 60 per kind) and `stylestudio_progress` (one row per account holding challenge stars, activity counters, earned stickers and sticker placements). All use the same owner-only row level security:
 
 ```sql
 create table public.stylestudio_looks (
